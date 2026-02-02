@@ -19,7 +19,6 @@ public class JwtConfig {
     @Primary
     public JwtDecoder jwtDecoder() throws Exception {
 
-        // Use try-with-resources to ensure the stream is closed
         try (InputStream is = getClass()
                 .getClassLoader()
                 .getResourceAsStream("supabase-jwks.json")) {
