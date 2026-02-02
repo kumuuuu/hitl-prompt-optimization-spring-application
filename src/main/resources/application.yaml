@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hitl_db
+    username: hitl_user
+    password: hitl_pass
+    driver-class-name: org.postgresql.Driver
+
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          jwk-set-uri: https://evurwmsnuhkemluaahnq.supabase.co/auth/v1/.well-known/jwks.json
+#          jws-algorithms: ES256
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%clr(%d{HH:mm:ss}){faint} %clr(%-5p) %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
+
+gemini:
+  api-key: "AIzaSyCu8fmFmwS3I3N9W_FIUoj8Dfik3RJ9yB0"
