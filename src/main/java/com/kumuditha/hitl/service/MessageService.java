@@ -76,4 +76,39 @@ public class MessageService {
         return messageRepository.save(aiMessage);
     }
 
+    // Added helper methods to support streaming endpoint in the controller.
+
+    public Conversation getOrCreateConversation(User user, Long conversationId) {
+        return (conversationId == null)
+                ? conversationService.createConversation(user)
+                : conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+    }
+
+    public Message saveUserMessage(Conversation conversation, String content) {
+        Message userMessage = new Message();
+        userMessage.setConversation(conversation);
+        userMessage.setSender(Message.SenderType.USER);
+        userMessage.setContent(content);
+        return messageRepository.save(userMessage);
+    }
+
+    public String buildPrompt(String content) {
+        var ambiguityResult = ambiguityService.analyze(content);
+        return llmPromptBuilder.buildPrompt(content, ambiguityResult);
+    }
+
+    public String generateAiText(String prompt) {
+        return geminiService.getCompletion(prompt);
+    }
+
+    public Message saveAiMessage(Conversation conversation, String aiText, String promptUsed) {
+        Message aiMessage = new Message();
+        aiMessage.setConversation(conversation);
+        aiMessage.setSender(Message.SenderType.AI);
+        aiMessage.setContent(aiText);
+        aiMessage.setPromptUsed(promptUsed);
+        return messageRepository.save(aiMessage);
+    }
+
 }
