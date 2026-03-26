@@ -13,25 +13,24 @@ public class LlmPromptBuilder {
     public String buildPrompt(String userMessage, AmbiguityResponse ambiguity) {
 
         return """
-You are an AI assistant responding to a user message that contains known ambiguities.
-The ambiguities have already been detected by an external system.
+                You are an AI assistant responding to a user message that contains known ambiguities.
+                The ambiguities have already been detected by an external system.
 
-Rules:
-- Do NOT explain or restate ambiguities.
-- Do NOT list interpretations.
-- Do NOT ask clarifying questions.
-- Provide a single, coherent answer that remains valid across all interpretations.
-- Give safe, generally applicable guidance.
+                Rules:
+                - Do NOT explain or restate ambiguities.
+                - Do NOT list interpretations.
+                - Do NOT ask clarifying questions.
+                - Provide a single, coherent answer that remains valid across all interpretations.
+                - Give safe, generally applicable guidance.
 
-Ambiguity context (for internal reasoning only):
-%s
+                Ambiguity context (for internal reasoning only):
+                %s
 
-User message:
-%s
-""".formatted(
+                User message:
+                %s
+                """.formatted(
                 buildAmbiguityContext(ambiguity),
-                userMessage
-        );
+                userMessage);
     }
 
     private String buildAmbiguityContext(AmbiguityResponse ambiguity) {
@@ -55,6 +54,12 @@ User message:
         sb.append("Ambiguity types: ")
                 .append(item.getClasses())
                 .append("\n");
+
+        if (item.getClass_confidence() != null && !item.getClass_confidence().isEmpty()) {
+            sb.append("Class confidence: ")
+                    .append(item.getClass_confidence())
+                    .append("\n");
+        }
 
         if (item.getSpans() != null && !item.getSpans().isEmpty()) {
             sb.append("Ambiguous spans:\n");

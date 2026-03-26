@@ -1,5 +1,6 @@
 package com.kumuditha.hitl.dto.ml;
 
+import java.util.Map;
 import java.util.List;
 
 public class AmbiguityItem {
@@ -7,6 +8,7 @@ public class AmbiguityItem {
     private int sentence_index;
     private String sentence;
     private List<String> classes;
+    private Map<String, Double> class_confidence;
     private List<AmbiguitySpan> spans;
 
     public int getSentence_index() {
@@ -31,6 +33,14 @@ public class AmbiguityItem {
 
     public void setClasses(List<String> classes) {
         this.classes = classes;
+    }
+
+    public Map<String, Double> getClass_confidence() {
+        return class_confidence;
+    }
+
+    public void setClass_confidence(Map<String, Double> class_confidence) {
+        this.class_confidence = class_confidence;
     }
 
     public List<AmbiguitySpan> getSpans() {
