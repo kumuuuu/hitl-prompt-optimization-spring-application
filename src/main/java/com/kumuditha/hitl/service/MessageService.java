@@ -7,6 +7,8 @@ import com.kumuditha.hitl.repository.ConversationRepository;
 import com.kumuditha.hitl.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.function.Consumer;
+
 @Service
 public class MessageService {
 
@@ -14,37 +16,32 @@ public class MessageService {
     private final ConversationRepository conversationRepository;
     private final ConversationService conversationService;
     private final AmbiguityAnalysisService ambiguityService;
-//    private final OpenAIService openAIService;
+    // private final OpenAIService openAIService;
     private final GeminiService geminiService;
     private final LlmPromptBuilder llmPromptBuilder;
-
-
 
     public MessageService(
             MessageRepository messageRepository,
             ConversationRepository conversationRepository,
             ConversationService conversationService,
             AmbiguityAnalysisService ambiguityService,
-//            OpenAIService openAIService,
+            // OpenAIService openAIService,
             GeminiService geminiService,
-            LlmPromptBuilder llmPromptBuilder
-    ) {
+            LlmPromptBuilder llmPromptBuilder) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.conversationService = conversationService;
         this.ambiguityService = ambiguityService;
-//        this.openAIService = openAIService;
+        // this.openAIService = openAIService;
         this.geminiService = geminiService;
         this.llmPromptBuilder = llmPromptBuilder;
     }
 
-
     public Message handleUserMessage(User user, Long conversationId, String content) {
 
-        Conversation conversation =
-                (conversationId == null)
-                        ? conversationService.createConversation(user)
-                        : conversationRepository.findById(conversationId)
+        Conversation conversation = (conversationId == null)
+                ? conversationService.createConversation(user)
+                : conversationRepository.findById(conversationId)
                         .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
 
         // 1. Save USER message
@@ -57,14 +54,11 @@ public class MessageService {
         // 2. Call ML ambiguity service
         var ambiguityResult = ambiguityService.analyze(content);
 
-
         // 3. Build ambiguity-aware prompt (silent ambiguity handling)
-        String llmPrompt =
-                llmPromptBuilder.buildPrompt(content, ambiguityResult);
+        String llmPrompt = llmPromptBuilder.buildPrompt(content, ambiguityResult);
 
         // 4. Call Gemini
-        String aiResponseText =
-                geminiService.getCompletion(llmPrompt);
+        String aiResponseText = geminiService.getCompletion(llmPrompt);
 
         // 4. Save AI message
         Message aiMessage = new Message();
@@ -82,7 +76,7 @@ public class MessageService {
         return (conversationId == null)
                 ? conversationService.createConversation(user)
                 : conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+                        .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
     }
 
     public Message saveUserMessage(Conversation conversation, String content) {
@@ -100,6 +94,12 @@ public class MessageService {
 
     public String generateAiText(String prompt) {
         return geminiService.getCompletion(prompt);
+    }
+
+    // New: stream AI text via callback. Delegates to
+    // GeminiService.streamCompletion.
+    public void streamAiText(String prompt, Consumer<String> onChunk) {
+        geminiService.streamCompletion(prompt, onChunk);
     }
 
     public Message saveAiMessage(Conversation conversation, String aiText, String promptUsed) {

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 
 @Service
@@ -106,6 +107,53 @@ public class GeminiService {
 
             // User-safe fallback response
             return fallbackMessage();
+        }
+    }
+
+    /**
+     * Stream completion from Gemini and invoke the provided onChunk Consumer for each partial response.
+     * This uses the SDK's generateContentStream API and iterates the response stream. The Consumer may be called
+     * multiple times as the model emits partial output. If streaming isn't available or an error occurs, the
+     * consumer will be invoked once with the fallback message.
+     */
+    public void streamCompletion(String prompt, Consumer<String> onChunk) {
+        if (this.client == null) {
+            logger.warn("Gemini client unavailable; emitting fallback via onChunk");
+            onChunk.accept(fallbackMessage());
+            return;
+        }
+
+        try {
+            // The SDK exposes generateContentStream which returns an iterable/stream-like response.
+            var responseStream = client.models.generateContentStream(
+                    "gemini-3-flash-preview",
+                    prompt,
+                    null
+            );
+
+            // Iterate the stream. Many SDK ResponseStream implementations are Iterable, so this should work.
+            for (var partial : responseStream) {
+                try {
+                    // GenerateContentResponse often contains a text() helper similar to the sync API
+                    String text = null;
+                    try {
+                        text = (String) partial.getClass().getMethod("text").invoke(partial);
+                    } catch (NoSuchMethodException nsme) {
+                        // Fallback: attempt toString
+                        text = partial.toString();
+                    }
+                    if (text != null && !text.isEmpty()) {
+                        onChunk.accept(text);
+                    }
+                } catch (Exception inner) {
+                    logger.debug("Error extracting text from partial response: {}", inner.toString());
+                }
+            }
+
+        } catch (Exception ex) {
+            logger.error("[Gemini streaming error] {}", ex.getMessage(), ex);
+            // If streaming fails, emit fallback once so callers get a message
+            onChunk.accept(fallbackMessage());
         }
     }
 

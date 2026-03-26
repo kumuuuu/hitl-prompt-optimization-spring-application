@@ -9,28 +9,26 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class AmbiguityAnalysisService {
 
-    private static final String ML_URL =
-            "https://babyrider-hitl-prompt-optimization-api.hf.space/analyze/";
+        private static final String ML_URL = "http://127.0.0.1:8000/analyze";
 
-    private final RestTemplate restTemplate = new RestTemplate();
+        // "https://babyrider-hitl-prompt-optimization-api.hf.space/analyze/";
 
-    public AmbiguityResponse analyze(String text) {
+        private final RestTemplate restTemplate = new RestTemplate();
 
-        AmbiguityRequest request = new AmbiguityRequest(text);
+        public AmbiguityResponse analyze(String text) {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+                AmbiguityRequest request = new AmbiguityRequest(text);
 
-        HttpEntity<AmbiguityRequest> entity =
-                new HttpEntity<>(request, headers);
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<AmbiguityResponse> response =
-                restTemplate.postForEntity(
-                        ML_URL,
-                        entity,
-                        AmbiguityResponse.class
-                );
+                HttpEntity<AmbiguityRequest> entity = new HttpEntity<>(request, headers);
 
-        return response.getBody();
-    }
+                ResponseEntity<AmbiguityResponse> response = restTemplate.postForEntity(
+                                ML_URL,
+                                entity,
+                                AmbiguityResponse.class);
+
+                return response.getBody();
+        }
 }

@@ -31,4 +31,4 @@ logging:
     console: "%clr(%d{HH:mm:ss}){faint} %clr(%-5p) %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
 
 gemini:
-  api-key: "AIzaSyCu8fmFmwS3I3N9W_FIUoj8Dfik3RJ9yB0"
+  api-key: "AIzaSyDtMjBJc8BcaD92JZYdeVESefKdvTjf-b8"

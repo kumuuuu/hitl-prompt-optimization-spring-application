@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -32,8 +33,7 @@ public class MessageController {
     @PostMapping(produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<StreamingResponseBody> sendMessage(
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody CreateMessageRequest request
-    ) {
+            @Valid @RequestBody CreateMessageRequest request) {
         User user = userService.fromJwt(jwt);
 
         // Prepare conversation and persist the user message immediately
@@ -44,31 +44,46 @@ public class MessageController {
         String prompt = messageService.buildPrompt(request.getContent());
 
         StreamingResponseBody stream = outputStream -> {
-            try {
-                // Generate AI text (currently synchronous; we will stream the returned text in chunks)
-                String aiText = messageService.generateAiText(prompt);
+            StringBuilder accumulated = new StringBuilder();
+            AtomicBoolean anyChunkEmitted = new AtomicBoolean(false);
 
-                // Stream the AI text in small UTF-8 chunks so the client can incrementally decode
-                final int CHUNK_SIZE = 32; // bytes per chunk; small enough for typing effect
-                byte[] bytes = aiText.getBytes(StandardCharsets.UTF_8);
-                int offset = 0;
-                while (offset < bytes.length) {
-                    int len = Math.min(CHUNK_SIZE, bytes.length - offset);
-                    outputStream.write(bytes, offset, len);
+            try {
+                // Stream from Gemini in real-time; MessageService.streamAiText will invoke the
+                // callback for each partial chunk
+                messageService.streamAiText(prompt, chunk -> {
+                    try {
+                        if (chunk == null)
+                            return;
+                        byte[] bytes = chunk.getBytes(StandardCharsets.UTF_8);
+                        // write the chunk directly and flush so client can decode progressively
+                        outputStream.write(bytes);
+                        outputStream.flush();
+
+                        accumulated.append(chunk);
+                        anyChunkEmitted.set(true);
+                    } catch (Exception e) {
+                        // If writing failed, log on server side (can't throw from lambda)
+                        System.err.println("Failed to write chunk to output stream: " + e.getMessage());
+                    }
+                });
+
+                // If no chunks were emitted, write a minimal newline so client isn't left
+                // waiting
+                if (!anyChunkEmitted.get()) {
+                    outputStream.write('\n');
                     outputStream.flush();
-                    offset += len;
-                    // No sleep here; the network flushing is sufficient. If desired, a short Thread.sleep could be added.
+                } else {
+                    // terminate with newline
+                    outputStream.write('\n');
+                    outputStream.flush();
                 }
 
-                // Ensure newline at end
-                outputStream.write('\n');
-                outputStream.flush();
-
                 // Persist the complete AI message after streaming
+                String aiText = accumulated.toString();
                 messageService.saveAiMessage(conversation, aiText, prompt);
 
             } catch (Exception e) {
-                // On error, attempt to write a short fallback message and persist an error-like AI message
+                // On error, attempt to write a short fallback message
                 try {
                     String fallback = "\n[Error generating response]\n";
                     outputStream.write(fallback.getBytes(StandardCharsets.UTF_8));
