@@ -7,6 +7,9 @@ import com.kumuditha.hitl.repository.ConversationRepository;
 import com.kumuditha.hitl.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 
+import com.kumuditha.hitl.dto.SendMessageResponse;
+import com.kumuditha.hitl.dto.ml.AmbiguityResponse;
+
 import java.util.function.Consumer;
 
 @Service
@@ -68,6 +71,32 @@ public class MessageService {
         aiMessage.setPromptUsed(llmPrompt);
 
         return messageRepository.save(aiMessage);
+    }
+
+    /**
+     * Non-streaming flow: persists user message, runs ambiguity analysis, builds
+     * prompt,
+     * calls the LLM, persists the AI message, and returns both the ML analysis +
+     * LLM output.
+     */
+    public SendMessageResponse handleUserMessageWithAnalysis(User user, Long conversationId, String content) {
+
+        Conversation conversation = getOrCreateConversation(user, conversationId);
+
+        Message userMessage = saveUserMessage(conversation, content);
+
+        AmbiguityResponse analysis = ambiguityService.analyze(content);
+        String llmPrompt = llmPromptBuilder.buildPrompt(content, analysis);
+        String llmOutput = geminiService.getCompletion(llmPrompt);
+
+        Message aiMessage = saveAiMessage(conversation, llmOutput, llmPrompt);
+
+        return new SendMessageResponse(
+                conversation.getId(),
+                userMessage.getId(),
+                aiMessage.getId(),
+                analysis,
+                llmOutput);
     }
 
     // Added helper methods to support streaming endpoint in the controller.
