@@ -8,12 +8,12 @@ spring:
     password: hitl_pass
     driver-class-name: org.postgresql.Driver
 
-#  security:
-#    oauth2:
-#      resourceserver:
-#        jwt:
-#          jwk-set-uri: https://evurwmsnuhkemluaahnq.supabase.co/auth/v1/.well-known/jwks.json
-#          jws-algorithms: ES256
+  #  security:
+  #    oauth2:
+  #      resourceserver:
+  #        jwt:
+  #          jwk-set-uri: https://evurwmsnuhkemluaahnq.supabase.co/auth/v1/.well-known/jwks.json
+  #          jws-algorithms: ES256
 
   jpa:
     hibernate:
@@ -29,6 +29,3 @@ logging:
     org.springframework.security: DEBUG
   pattern:
     console: "%clr(%d{HH:mm:ss}){faint} %clr(%-5p) %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n"
-
-gemini:
-  api-key: "AIzaSyDtMjBJc8BcaD92JZYdeVESefKdvTjf-b8"

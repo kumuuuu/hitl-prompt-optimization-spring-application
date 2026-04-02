@@ -35,7 +35,7 @@ public class MessageService {
     private final ConversationRepository conversationRepository;
     private final ConversationService conversationService;
     private final AmbiguityAnalysisService ambiguityService;
-    private final GeminiService geminiService;
+    private final LlmService llmService;
     private final LlmPromptBuilder llmPromptBuilder;
 
     public MessageService(
@@ -43,13 +43,13 @@ public class MessageService {
             ConversationRepository conversationRepository,
             ConversationService conversationService,
             AmbiguityAnalysisService ambiguityService,
-            GeminiService geminiService,
+            LlmService llmService,
             LlmPromptBuilder llmPromptBuilder) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.conversationService = conversationService;
         this.ambiguityService = ambiguityService;
-        this.geminiService = geminiService;
+        this.llmService = llmService;
         this.llmPromptBuilder = llmPromptBuilder;
     }
 
@@ -85,7 +85,7 @@ public class MessageService {
 
         String llmPrompt = llmPromptBuilder.buildPrompt(content, ambiguityResult);
 
-        String aiResponseText = geminiService.getCompletion(llmPrompt);
+        String aiResponseText = llmService.generate(llmPrompt);
 
         Message aiMessage = new Message();
         aiMessage.setConversation(conversation);
@@ -120,7 +120,7 @@ public class MessageService {
 
         AmbiguityResponse analysis = ambiguityService.analyze(content);
         String llmPrompt = llmPromptBuilder.buildPrompt(content, analysis);
-        String llmOutput = geminiService.getCompletion(llmPrompt);
+        String llmOutput = llmService.generate(llmPrompt);
 
         Message aiMessage = saveAiMessage(conversation, llmOutput, llmPrompt);
 
@@ -180,7 +180,7 @@ public class MessageService {
      * @return LLM completion text
      */
     public String generateAiText(String prompt) {
-        return geminiService.getCompletion(prompt);
+        return llmService.generate(prompt);
     }
 
     /**
@@ -191,7 +191,8 @@ public class MessageService {
      * @param onChunk consumer invoked for each partial chunk emitted
      */
     public void streamAiText(String prompt, Consumer<String> onChunk) {
-        geminiService.streamCompletion(prompt, onChunk);
+        // Ollama call is non-streaming; emit as a single chunk.
+        onChunk.accept(llmService.generate(prompt));
     }
 
     /**

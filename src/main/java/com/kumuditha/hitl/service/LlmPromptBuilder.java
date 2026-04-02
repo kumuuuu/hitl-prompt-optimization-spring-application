@@ -11,7 +11,7 @@ package com.kumuditha.hitl.service;
  * - Generates the final prompt with rules to keep responses robust across interpretations.
  *
  * Used in:
- * - MessageService to create prompts for Gemini based on ML ambiguity output.
+ * - MessageService to create prompts for the LLM based on ML ambiguity output.
  */
 
 import com.kumuditha.hitl.dto.ml.AmbiguityItem;

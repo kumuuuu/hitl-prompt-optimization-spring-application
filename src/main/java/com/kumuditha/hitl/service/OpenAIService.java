@@ -23,7 +23,7 @@ public class OpenAIService {
      *
      * <p>
      * Current behavior is a stubbed response to keep the API surface stable while
-     * Gemini is used as the active provider.
+     * a different provider is used as the active LLM.
      * </p>
      *
      * @param prompt prompt text

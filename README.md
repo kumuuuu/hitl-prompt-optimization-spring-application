@@ -1,6 +1,6 @@
 # HITL Backend (Spring Boot)
 
-Human-in-the-Loop backend service built with Spring Boot. It authenticates users via Supabase JWTs, stores users/conversations/messages in PostgreSQL, runs an ambiguity detector, then generates an “ambiguity-aware” response using Google Gemini.
+Human-in-the-Loop backend service built with Spring Boot. It authenticates users via Supabase JWTs, stores users/conversations/messages in PostgreSQL, runs an ambiguity detector, then generates an “ambiguity-aware” response using a locally hosted Ollama model.
 
 ## Tech Stack
 
@@ -10,12 +10,12 @@ Human-in-the-Loop backend service built with Spring Boot. It authenticates users
 - Spring Security (OAuth2 Resource Server JWT)
 - Spring Data JPA (Hibernate)
 - PostgreSQL
-- Google Gemini SDK (`com.google.genai:google-genai`)
+- Ollama (local LLM server)
 
 ## Repo Layout
 
 - [pom.xml](pom.xml) — Maven build (the Spring Boot app)
-- [src/main/resources/application.yaml](src/main/resources/application.yaml) — app config (port, DB, logging, Gemini key)
+- [src/main/resources/application.yaml](src/main/resources/application.yaml) — app config (port, DB, logging)
 - [src/main/resources/supabase-jwks.json](src/main/resources/supabase-jwks.json) — JWKS used to verify Supabase JWTs
 
 ## What This Service Does
@@ -27,7 +27,7 @@ Human-in-the-Loop backend service built with Spring Boot. It authenticates users
 3. The user message is persisted.
 4. The message text is sent to an external ML service for ambiguity detection.
 5. The backend builds a “silent ambiguity” prompt (no clarification questions, no listing ambiguities).
-6. The prompt is sent to Gemini.
+6. The prompt is sent to the local LLM (Ollama).
 7. The AI response is persisted and returned.
 
 ## Authentication & Security
@@ -85,14 +85,13 @@ Expected response maps to DTOs in:
 
 - [src/main/java/com/kumuditha/hitl/dto/ml](src/main/java/com/kumuditha/hitl/dto/ml)
 
-### Gemini
+### Ollama (LLM)
 
-Gemini integration:
+The backend generates responses using a locally running Ollama instance:
 
-- Service: [src/main/java/com/kumuditha/hitl/service/GeminiService.java](src/main/java/com/kumuditha/hitl/service/GeminiService.java)
-- Model name currently used: `gemini-3-flash-preview`
-
-If `gemini.api-key` is not configured, GeminiService logs a warning and will not be able to generate real responses.
+- API: `POST http://localhost:11434/api/generate`
+- Service: [src/main/java/com/kumuditha/hitl/service/LlmService.java](src/main/java/com/kumuditha/hitl/service/LlmService.java)
+- Model: `mistral`
 
 ## Configuration
 
@@ -116,19 +115,15 @@ You can override these using environment variables (Spring Boot relaxed binding)
 - `SPRING_DATASOURCE_USERNAME`
 - `SPRING_DATASOURCE_PASSWORD`
 
-### Gemini API Key
+### Ollama
 
-Configure via one of:
+Make sure Ollama is running locally and has the model available.
 
-- `gemini.api-key` in `application.yaml`
-- environment variable `GEMINI_API_KEY`
-
-Security note: avoid committing real API keys. For local dev, prefer `GEMINI_API_KEY`.
-
-Recommended for local dev (PowerShell):
+Example (PowerShell):
 
 ```powershell
-$env:GEMINI_API_KEY = "<your_key>"
+ollama pull mistral
+ollama serve
 ```
 
 ## Run Locally (Windows)
@@ -256,7 +251,7 @@ Returns a conversation + its messages.
 - **JWT fails to verify after key rotation**: Update [src/main/resources/supabase-jwks.json](src/main/resources/supabase-jwks.json).
 - **DB connection errors**: Check `SPRING_DATASOURCE_*` values and that PostgreSQL is reachable.
 - **Ambiguity service not reachable**: Ensure the detector is running at `http://127.0.0.1:8000/analyze`.
-- **Gemini not responding**: Set `GEMINI_API_KEY` (or `gemini.api-key`) and confirm outbound internet access.
+- **LLM not responding**: Ensure Ollama is running at `http://localhost:11434` and the model is pulled (e.g. `ollama pull mistral`).
 
 ## Notes / Next Improvements (Optional)
 
