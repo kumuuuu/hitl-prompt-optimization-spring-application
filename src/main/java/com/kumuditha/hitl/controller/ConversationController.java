@@ -1,5 +1,19 @@
 package com.kumuditha.hitl.controller;
 
+/*
+ * File: ConversationController.java
+ *
+ * Description:
+ * REST controller for listing and retrieving user conversations.
+ *
+ * Responsibilities:
+ * - Exposes read-only conversation endpoints for the authenticated user.
+ * - Maps domain/service results into API response DTOs.
+ *
+ * Used in:
+ * - Frontend sidebar (conversation list) and conversation detail view.
+ */
+
 import com.kumuditha.hitl.dto.ConversationSummaryResponse;
 import com.kumuditha.hitl.dto.ConversationDetailResponse;
 import com.kumuditha.hitl.entity.User;
@@ -29,15 +43,29 @@ public class ConversationController {
     private final ConversationService conversationService;
     private final UserService userService;
 
+    /**
+     * Creates a controller with required service dependencies.
+     *
+     * @param conversationService conversation read operations
+     * @param userService         resolves/creates application users from JWT claims
+     */
     public ConversationController(ConversationService conversationService, UserService userService) {
         this.conversationService = conversationService;
         this.userService = userService;
     }
 
     /**
-     * Sidebar list.
+     * Lists recent conversations for the authenticated user.
      *
-     * GET /api/conversations?limit=50
+     * <p>
+     * Used to populate the UI sidebar. The {@code limit} parameter guards against
+     * returning
+     * excessively large lists.
+     * </p>
+     *
+     * @param jwt   authenticated principal used to identify the user
+     * @param limit maximum number of conversations to return
+     * @return conversation summaries (most recent first)
      */
     @GetMapping
     public ResponseEntity<List<ConversationSummaryResponse>> listConversations(
@@ -58,6 +86,20 @@ public class ConversationController {
         return ResponseEntity.ok(summaries);
     }
 
+    /**
+     * Retrieves a single conversation (including its messages) for the
+     * authenticated user.
+     *
+     * <p>
+     * If the conversation does not exist or does not belong to the user, a 404 is
+     * returned
+     * to avoid leaking identifiers across users.
+     * </p>
+     *
+     * @param jwt            authenticated principal used to identify the user
+     * @param conversationId conversation identifier
+     * @return conversation detail response or 404
+     */
     @GetMapping("/{conversationId}")
     public ResponseEntity<ConversationDetailResponse> getConversation(
             @AuthenticationPrincipal Jwt jwt,

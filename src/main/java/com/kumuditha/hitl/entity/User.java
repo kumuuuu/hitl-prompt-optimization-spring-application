@@ -1,5 +1,19 @@
 package com.kumuditha.hitl.entity;
 
+/*
+ * File: User.java
+ *
+ * Description:
+ * JPA entity representing an authenticated user of the application.
+ *
+ * Responsibilities:
+ * - Stores identity-provider identifiers (Supabase subject) and basic profile fields.
+ * - Tracks creation/update timestamps.
+ *
+ * Used in:
+ * - UserService and controllers when persisting and returning the current user.
+ */
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,7 +25,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Supabase user id (UUID string)
+    /** Supabase subject/identifier (typically a UUID string). */
     @Column(nullable = false, unique = true)
     private String supabaseUserId;
 
@@ -22,7 +36,7 @@ public class User {
 
     private String avatarUrl;
 
-    // google, github, etc.
+    /** Identity provider name (e.g., google, github). */
     @Column(nullable = true)
     private String provider;
 
@@ -32,8 +46,9 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    /* ---------- JPA lifecycle hooks ---------- */
-
+    /**
+     * Initializes audit timestamps on first persist.
+     */
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -41,61 +56,98 @@ public class User {
         this.updatedAt = now;
     }
 
+    /**
+     * Updates the {@code updatedAt} audit timestamp before entity updates.
+     */
     @PreUpdate
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /* ---------- getters & setters ---------- */
-
     public Long getId() {
         return id;
     }
 
+    /**
+     * @return Supabase subject/identifier for this user
+     */
     public String getSupabaseUserId() {
         return supabaseUserId;
     }
 
+    /**
+     * @param supabaseUserId Supabase subject/identifier for this user
+     */
     public void setSupabaseUserId(String supabaseUserId) {
         this.supabaseUserId = supabaseUserId;
     }
 
+    /**
+     * @return email address associated with the user
+     */
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @param email email address associated with the user
+     */
     public void setEmail(String email) {
         this.email = email;
     }
 
+    /**
+     * @return display name (may be null)
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * @param name display name
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * @return avatar URL (may be null)
+     */
     public String getAvatarUrl() {
         return avatarUrl;
     }
 
+    /**
+     * @param avatarUrl avatar URL
+     */
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
     }
 
+    /**
+     * @return identity provider name (may be null)
+     */
     public String getProvider() {
         return provider;
     }
 
+    /**
+     * @param provider identity provider name
+     */
     public void setProvider(String provider) {
         this.provider = provider;
     }
 
+    /**
+     * @return creation timestamp
+     */
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return last update timestamp
+     */
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }

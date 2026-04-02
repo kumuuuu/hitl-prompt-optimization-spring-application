@@ -1,5 +1,19 @@
 package com.kumuditha.hitl.service;
 
+/*
+ * File: LlmPromptBuilder.java
+ *
+ * Description:
+ * Builds an LLM prompt that incorporates ambiguity analysis context.
+ *
+ * Responsibilities:
+ * - Formats ambiguity items into a compact context block.
+ * - Generates the final prompt with rules to keep responses robust across interpretations.
+ *
+ * Used in:
+ * - MessageService to create prompts for Gemini based on ML ambiguity output.
+ */
+
 import com.kumuditha.hitl.dto.ml.AmbiguityItem;
 import com.kumuditha.hitl.dto.ml.AmbiguityResponse;
 import com.kumuditha.hitl.dto.ml.AmbiguitySpan;
@@ -10,6 +24,18 @@ import java.util.stream.Collectors;
 @Component
 public class LlmPromptBuilder {
 
+    /**
+     * Builds the full prompt sent to the LLM.
+     *
+     * <p>
+     * The prompt instructs the model to produce an answer that remains valid across
+     * multiple plausible interpretations, without explicitly listing ambiguities.
+     * </p>
+     *
+     * @param userMessage raw user message
+     * @param ambiguity   ambiguity analysis result
+     * @return formatted prompt text
+     */
     public String buildPrompt(String userMessage, AmbiguityResponse ambiguity) {
 
         return """
@@ -33,6 +59,12 @@ public class LlmPromptBuilder {
                 userMessage);
     }
 
+    /**
+     * Builds the ambiguity context section used for the prompt.
+     *
+     * @param ambiguity ambiguity analysis result
+     * @return a human-readable context string
+     */
     private String buildAmbiguityContext(AmbiguityResponse ambiguity) {
         if (ambiguity.getAmbiguities() == null || ambiguity.getAmbiguities().isEmpty()) {
             return "No ambiguities detected.";
@@ -43,6 +75,12 @@ public class LlmPromptBuilder {
                 .collect(Collectors.joining("\n\n"));
     }
 
+    /**
+     * Formats a single ambiguity item into a stable, readable block.
+     *
+     * @param item ambiguity item
+     * @return formatted text block
+     */
     private String formatAmbiguityItem(AmbiguityItem item) {
 
         StringBuilder sb = new StringBuilder();

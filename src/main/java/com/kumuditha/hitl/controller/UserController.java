@@ -1,5 +1,19 @@
 package com.kumuditha.hitl.controller;
 
+/*
+ * File: UserController.java
+ *
+ * Description:
+ * REST controller for user-related endpoints (identity debug and "current user").
+ *
+ * Responsibilities:
+ * - Exposes an authenticated "who am I" endpoint that maps JWT claims to an app User.
+ * - Provides a debug endpoint for inspecting authentication during development.
+ *
+ * Used in:
+ * - Frontend initialization to fetch the current user profile.
+ */
+
 import com.kumuditha.hitl.dto.UserMeResponse;
 import com.kumuditha.hitl.entity.User;
 import com.kumuditha.hitl.service.UserService;
@@ -24,10 +38,28 @@ public class UserController {
 
     private final UserService userService;
 
+    /**
+     * Creates a controller with required service dependencies.
+     *
+     * @param userService user lookup/creation based on identity provider claims
+     */
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
+    /**
+     * Development-only endpoint that returns the current JWT as seen by Spring
+     * Security.
+     *
+     * <p>
+     * This is useful for verifying that authentication is wired correctly and that
+     * required claims are present.
+     * </p>
+     *
+     * @param jwt JWT principal injected by Spring Security (may be null if
+     *            unauthenticated)
+     * @return the JWT object (or null)
+     */
     @GetMapping("/debug")
     public Object debug(@AuthenticationPrincipal Jwt jwt) {
         logger.debug("/api/debug called; jwt present={}", jwt != null);
@@ -41,7 +73,21 @@ public class UserController {
         return jwt;
     }
 
-
+    /**
+     * Returns the current application user derived from the authenticated
+     * principal.
+     *
+     * <p>
+     * The principal may be provided as a {@link Jwt} or as a map of claims
+     * depending on
+     * the Spring Security configuration and converters in use.
+     * </p>
+     *
+     * @param authentication Spring Security authentication (must be present)
+     * @return a normalized user response for the client
+     * @throws ResponseStatusException if the caller is unauthenticated or uses an
+     *                                 unsupported principal type
+     */
     @GetMapping("/me")
     public UserMeResponse me(Authentication authentication) {
 
@@ -79,13 +125,17 @@ public class UserController {
                 email,
                 name,
                 avatarUrl,
-                provider
-        );
+                provider);
 
         return new UserMeResponse(user);
     }
 
-    // Helper: safely coerce an object to Map<String,Object>, never null
+    /**
+     * Safely coerces a value to a {@code Map<String, Object>}.
+     *
+     * @param o value to coerce
+     * @return a map if {@code o} is a map; otherwise an empty map
+     */
     @SuppressWarnings("unchecked")
     private static Map<String, Object> safeMap(Object o) {
         if (o instanceof Map) {
@@ -94,7 +144,12 @@ public class UserController {
         return Map.of();
     }
 
-    // Helper: safely coerce to String (null -> null)
+    /**
+     * Safely coerces a value to String.
+     *
+     * @param o value to coerce
+     * @return {@code null} if {@code o} is null, otherwise {@code o.toString()}
+     */
     private static String safeString(Object o) {
         return o == null ? null : o.toString();
     }

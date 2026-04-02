@@ -1,5 +1,20 @@
 package com.kumuditha.hitl.service;
 
+/*
+ * File: ConversationService.java
+ *
+ * Description:
+ * Service for conversation retrieval and conversation-to-DTO mapping.
+ *
+ * Responsibilities:
+ * - Creates conversations and lists conversations for a given user.
+ * - Enforces ownership checks when reading a specific conversation.
+ * - Maps persisted Message entities to API-facing DTOs (including optional metadata).
+ *
+ * Used in:
+ * - ConversationController to serve the sidebar list and conversation detail endpoints.
+ */
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kumuditha.hitl.dto.ConversationDetailResponse;
 import com.kumuditha.hitl.dto.MessageDTO;
@@ -26,17 +41,36 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
 
+    /**
+     * Creates the service with required persistence dependencies.
+     *
+     * @param conversationRepository repository for Conversation entities
+     * @param messageRepository      repository for Message entities
+     */
     public ConversationService(ConversationRepository conversationRepository, MessageRepository messageRepository) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
     }
 
+    /**
+     * Creates a new conversation owned by the given user.
+     *
+     * @param user owner of the new conversation
+     * @return persisted conversation
+     */
     public Conversation createConversation(User user) {
         Conversation conversation = new Conversation();
         conversation.setUser(user);
         return conversationRepository.save(conversation);
     }
 
+    /**
+     * Lists conversations belonging to a user, capped to a safe maximum.
+     *
+     * @param user  owner whose conversations should be listed
+     * @param limit requested maximum number of conversations
+     * @return conversations ordered by most recently updated first
+     */
     public List<Conversation> listForUser(User user, int limit) {
         int safeLimit = (limit <= 0) ? 50 : Math.min(limit, 200);
 
@@ -47,6 +81,18 @@ public class ConversationService {
         return conversations.subList(0, safeLimit);
     }
 
+    /**
+     * Retrieves a conversation (and its messages) only if it belongs to the user.
+     *
+     * <p>
+     * Returns empty instead of throwing when not found/not owned to avoid leaking
+     * the existence of a conversation ID across users.
+     * </p>
+     *
+     * @param user           requesting user
+     * @param conversationId conversation identifier
+     * @return a populated response if owned; otherwise empty
+     */
     public Optional<ConversationDetailResponse> getForUser(User user, Long conversationId) {
         Optional<Conversation> convOpt = conversationRepository.findById(conversationId);
         if (convOpt.isEmpty()) {
@@ -73,6 +119,13 @@ public class ConversationService {
                 messageDtos));
     }
 
+    /**
+     * Maps a persisted message into an API DTO, including optional ambiguity
+     * metadata.
+     *
+     * @param message persisted message entity
+     * @return message DTO expected by clients
+     */
     private MessageDTO toDto(Message message) {
         String role = toRole(message.getSender());
         String timestamp = message.getCreatedAt() != null ? message.getCreatedAt().toString() : null;
@@ -94,6 +147,13 @@ public class ConversationService {
         return new MessageDTO(role, message.getContent(), timestamp, meta);
     }
 
+    /**
+     * Converts internal sender type into the UI role strings expected by the
+     * client.
+     *
+     * @param senderType sender type stored in the database
+     * @return role string for the frontend message renderer
+     */
     private static String toRole(Message.SenderType senderType) {
         if (senderType == null) {
             return "assistant";
